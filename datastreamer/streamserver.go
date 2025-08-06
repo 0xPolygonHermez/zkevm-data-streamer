@@ -213,7 +213,7 @@ func NewServer(port uint16, version uint8, systemID uint64, streamType StreamTyp
 	s.nextEntry = s.streamFile.header.TotalEntries
 
 	// Open (or create) the bookmarks DB
-	name := s.fileName[0:strings.IndexRune(s.fileName, '.')] + ".db"
+	name := s.fileName[:strings.LastIndex(s.fileName, ".")] + ".db"
 	s.bookmark, err = NewBookmark(name)
 	if err != nil {
 		return &s, err

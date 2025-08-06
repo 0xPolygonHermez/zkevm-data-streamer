@@ -113,3 +113,46 @@ func relayEntry(e *FileEntry, c *StreamClient, s *StreamServer) error {
 
 	return nil
 }
+
+// Stop gracefully shuts down the relay server and client
+func (r *StreamRelay) Stop() error {
+	// Stop the client first
+	if r.client != nil {
+		err := r.client.ExecCommandStop()
+		if err != nil {
+			log.Errorf("Error stopping relay client: %v", err)
+			return err
+		}
+		r.client.closeConnection()
+	}
+
+	// Stop the server
+	if r.server != nil {
+		// Close the listener to stop accepting new connections
+		if r.server.ln != nil {
+			err := r.server.ln.Close()
+			if err != nil {
+				log.Errorf("Error closing server listener: %v", err)
+				return err
+			}
+		}
+
+		// Kill all connected clients
+		r.server.mutexClients.Lock()
+		for clientID := range r.server.clients {
+			r.server.killClient(clientID)
+		}
+		r.server.mutexClients.Unlock()
+
+		// Mark server as stopped to prevent new atomic operations
+		r.server.started = false
+
+		// Close the stream channel to stop the broadcast goroutine
+		if r.server.stream != nil {
+			close(r.server.stream)
+		}
+	}
+
+	log.Info("Relay server stopped successfully")
+	return nil
+}
