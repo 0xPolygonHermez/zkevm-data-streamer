@@ -38,7 +38,6 @@ type CommandError uint32
 const EntryTypeNotFound = math.MaxUint32
 
 const (
-	maxConnections    = 100 // Maximum number of connected clients
 	streamBuffer      = 256 // Buffers for the stream channel
 	maxBookmarkLength = 16  // Maximum number of bytes for a bookmark
 )
@@ -116,7 +115,9 @@ type StreamServer struct {
 	// Time interval to check for client connections that have reached
 	// the inactivity timeout and kill them
 	inactivityCheckInterval time.Duration
-	started                 bool // Flag server started
+	// maxConnections specifies the max number of connections open. If it is set to 0, the limit is disabled.
+	maxConnections uint32
+	started        bool // Flag server started
 
 	version      uint8
 	systemID     uint64
@@ -165,7 +166,7 @@ type ResultEntry struct {
 // NewServer creates a new data stream server
 func NewServer(port uint16, version uint8, systemID uint64, streamType StreamType, fileName string,
 	writeTimeout time.Duration, inactivityTimeout time.Duration, inactivityCheckInterval time.Duration,
-	cfg *log.Config) (*StreamServer, error) {
+	cfg *log.Config, maxConnections uint32) (*StreamServer, error) {
 	// Create the server data stream
 	s := StreamServer{
 		port:                    port,
@@ -174,6 +175,7 @@ func NewServer(port uint16, version uint8, systemID uint64, streamType StreamTyp
 		inactivityTimeout:       inactivityTimeout,
 		inactivityCheckInterval: inactivityCheckInterval,
 		started:                 false,
+		maxConnections:          maxConnections,
 
 		version:    version,
 		systemID:   systemID,
@@ -284,8 +286,8 @@ func (s *StreamServer) waitConnections() {
 		}
 
 		// Check max connections allowed
-		if s.getSafeClientsLen() >= maxConnections {
-			log.Warnf("Unable to accept client connection, maximum number of connections reached (%d)", maxConnections)
+		if s.maxConnections != 0 && s.getSafeClientsLen() >= s.maxConnections {
+			log.Warnf("Unable to accept client connection, maximum number of connections reached (%d)", s.maxConnections)
 			conn.Close()
 			time.Sleep(timeout)
 			continue
@@ -1182,10 +1184,10 @@ func (s *StreamServer) getSafeClient(clientID string) *client {
 	return s.clients[clientID]
 }
 
-func (s *StreamServer) getSafeClientsLen() int {
+func (s *StreamServer) getSafeClientsLen() uint32 {
 	s.mutexClients.RLock()
 	defer s.mutexClients.RUnlock()
-	return len(s.clients)
+	return uint32(len(s.clients))
 }
 
 // BookmarkPrintDump prints all bookmarks

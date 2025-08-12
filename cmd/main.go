@@ -269,7 +269,7 @@ func runServer(ctx *cli.Context) error {
 	// Create stream server
 	s, err := datastreamer.NewServer(uint16(port), streamerVersion, streamerSystemID, StSequencer, file,
 		time.Duration(writeTimeout)*time.Millisecond, time.Duration(inactivityTimeout)*time.Second,
-		5*time.Second, nil) //nolint:mnd
+		5*time.Second, nil, 0) //nolint:mnd
 	if err != nil {
 		return err
 	}
@@ -750,6 +750,7 @@ func checkEntryBlockSanity(
 			return err
 		}
 		blockNum := l2Block.Number
+		log.Debug("L2BlockNum: ", blockNum)
 		//Check previous End Block
 		if sanityBlockEnd != blockNum {
 			log.Warnf(`(X) SANITY CHECK failed (%d): BlockStart but the previous one is not closed yet? 

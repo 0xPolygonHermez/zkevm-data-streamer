@@ -28,7 +28,7 @@ func NewRelay(server string, port uint16, version uint8, systemID uint64,
 
 	// Create server side
 	r.server, err = NewServer(port, version, systemID, streamType, fileName, writeTimeout,
-		inactivityTimeout, inactivityCheckInterval, cfg)
+		inactivityTimeout, inactivityCheckInterval, cfg, 0)
 	if err != nil {
 		log.Errorf("Error creating relay server side: %v", err)
 		return nil, err
