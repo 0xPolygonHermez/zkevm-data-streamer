@@ -32,18 +32,3 @@ jobs:
         with:
           name: code-coverage-report
           path: coverage.out
-
-  sonarqube:
-    name: SonarQube Scan
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download code coverage results
-        uses: actions/download-artifact@v3
-        with:
-          name: code-coverage-report
-
-      - name: SonarCloud analysi
